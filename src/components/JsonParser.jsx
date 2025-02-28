@@ -46,7 +46,7 @@ function JsonParserProcessed({ data }) {
 
     if (containsClauses(child)) {
       idx++;
-
+      
       return (
         <FirstBornContext.Provider key={index} value={isFirstBorn}>
           <ClauseContext.Provider value={clauses.concat(idx)}>
