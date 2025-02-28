@@ -2,13 +2,18 @@
 
 import { createContext, useContext } from "react";
 import TypeWrapper from "./TypeWrapper";
-import { containsListOrHeadingAsDescendant, containsClauses } from "@/utils";
+
+import {
+  containsListOrHeadingAsDescendant,
+  containsClauses,
+  processMentions
+} from "@/utils";
 
 const ParagraphContext = createContext(false);
 const ClauseContext = createContext([]);
 const FirstBornContext = createContext(false);
 
-export default function JsonParser({ data }) {
+function JsonParserProcessed({ data }) {
   const isDescendantOfParagraph = useContext(ParagraphContext);
   const clauses = useContext(ClauseContext);
   const isFirstBornSoFar = useContext(FirstBornContext);
@@ -65,11 +70,19 @@ export default function JsonParser({ data }) {
   return (
     <ParagraphContext.Provider value={isDescendantOfParagraph || type === 'p'}>
       <TypeWrapper type={realType} {...styling}>
-        {text && isFirstBornSoFar && clauses.length > 0 ? clauses.join('.') : ''} {text && renderTextWithLineBreaks(text)}
-        {children && children.map((child, index) => renderChild(child, index))}
+        {text && isFirstBornSoFar && clauses.length > 0 ? clauses.join('.') : ''}{` `}
+        {type === 'mention' ? data.value : (
+          <>
+            {text && renderTextWithLineBreaks(text)}
+            {children && children.map((child, index) => renderChild(child, index))}
+          </>
+        )}
       </TypeWrapper>
     </ParagraphContext.Provider>
   );
 }
 
-// {text && clauses.length > 0 && isFirstBornSoFar ? clauses.slice(-1)[0] : ''}
+export default function JsonParser({ data }) {
+  const processedData = processMentions(data);
+  return <JsonParserProcessed data={processedData} />;
+}
