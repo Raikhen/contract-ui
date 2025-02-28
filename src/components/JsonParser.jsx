@@ -2,12 +2,16 @@
 
 import { createContext, useContext } from "react";
 import TypeWrapper from "./TypeWrapper";
-import { containsListOrHeadingAsDescendant } from "@/utils";
+import { containsListOrHeadingAsDescendant, containsClauses } from "@/utils";
 
 const ParagraphContext = createContext(false);
+const ClauseContext = createContext([]);
+const FirstBornContext = createContext(false);
 
 export default function JsonParser({ data }) {
   const isDescendantOfParagraph = useContext(ParagraphContext);
+  const clauses = useContext(ClauseContext);
+  const isFirstBornSoFar = useContext(FirstBornContext);
 
   // If the data is an array, render each child separately
   if (Array.isArray(data)) {
@@ -34,12 +38,38 @@ export default function JsonParser({ data }) {
     ));
   };
 
+  let clauseIndex = 0;
+
+  const renderChild = (child, index) => {
+    const isFirstBorn = (isFirstBornSoFar || type === 'clause') && index === 0;
+
+    if (containsClauses(child)) {    
+      clauseIndex++;
+
+      return (
+        <FirstBornContext.Provider key={index} value={isFirstBorn}>
+          <ClauseContext.Provider value={clauses.concat(clauseIndex)}>
+            <JsonParser data={child} />
+          </ClauseContext.Provider>
+        </FirstBornContext.Provider>
+      );
+    }
+
+    return (
+      <FirstBornContext.Provider key={index} value={isFirstBorn}>
+        <JsonParser data={child} />
+      </FirstBornContext.Provider>
+    );
+  }
+
   return (
     <ParagraphContext.Provider value={isDescendantOfParagraph || type === 'p'}>
       <TypeWrapper type={realType} {...styling}>
-        {text && renderTextWithLineBreaks(text)}
-        {children && children.map((child, index) => <JsonParser key={index} data={child} />)}
+        {text && isFirstBornSoFar && clauses.length > 0 ? clauses.join('.') : ''} {text && renderTextWithLineBreaks(text)}
+        {children && children.map((child, index) => renderChild(child, index))}
       </TypeWrapper>
     </ParagraphContext.Provider>
   );
 }
+
+// {text && clauses.length > 0 && isFirstBornSoFar ? clauses.slice(-1)[0] : ''}
