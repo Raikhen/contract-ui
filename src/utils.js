@@ -13,6 +13,18 @@ export const containsClauses = (node) => {
   return false;
 }
 
+export const containsMultipleClauses = (node) => {
+  if (node.type === 'clause') {
+    return false;
+  }
+
+  if (node.children) {
+    return node.children.filter(containsClauses).length > 1;
+  }
+
+  return false;
+}
+
 export const containsProperClauses = (node) => {
   return containsClauses(node) && node.type !== 'clause';
 }
